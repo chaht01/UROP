@@ -4,11 +4,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 
 //http://cremazer.blogspot.kr/2013/09/java-tcp.html
 public class TcpIpMultichatServer {
-	OutputStream clients;
-
+	HashMap<String,OutputStream> clients;
+	TcpIpMultichatServer(){
+		clients = new HashMap<String,OutputStream>();
+		Collections.synchronizedMap(clients);
+	}
 	public void start(){
 		ServerSocket serverSocket = null;
 		Socket socket =null;
@@ -26,10 +32,13 @@ public class TcpIpMultichatServer {
 		}
 	}
 	void sendToAll(String msg){
-		try{
-			DataOutputStream out = new DataOutputStream(clients);
-			out.writeUTF(msg);
-		}catch(IOException e){
+		Iterator it = clients.keySet().iterator();
+		while(it.hasNext()){
+			try{
+				DataOutputStream out = (DataOutputStream)clients.get(it.next());
+				out.writeUTF(msg);
+			}catch(IOException e){
+			}
 		}
 	}
 	public static void main(String args[]){
@@ -51,7 +60,7 @@ public class TcpIpMultichatServer {
 			try{
 				name = in.readUTF();
 				sendToAll("#"+name+"님이 들어오셨습니다.");
-				clients = out;
+				clients.put(name, out);
 				while(in!=null){
 					sendToAll(in.readUTF());
 				}
